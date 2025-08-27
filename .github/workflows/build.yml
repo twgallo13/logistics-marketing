@@ -1,0 +1,65 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run tests
+      run: npm test --if-present
+
+    - name: Build application
+      run: npm run build
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-files-${{ matrix.node-version }}
+        path: dist/
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+
+    steps:
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: build-files-20.x
+        path: dist/
+
+    - name: Deploy to staging
+      run: |
+        echo "Deploying to staging environment..."
+        # Add your deployment commands here
+        # For example, uploading to S3, FTP, or other hosting services
+        
+    # Uncomment and configure for production deployment
+    # - name: Deploy to production
+    #   if: github.ref == 'refs/heads/main'
+    #   run: |
+    #     echo "Deploying to production environment..."
+    #     # Add your production deployment commands here
